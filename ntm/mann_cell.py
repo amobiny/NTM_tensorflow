@@ -1,7 +1,8 @@
 import tensorflow as tf
 import numpy as np
 
-class MANNCell():
+
+class MANNCell:
     def __init__(self, rnn_size, memory_size, memory_vector_dim, head_num, gamma=0.95,
                  reuse=False, k_strategy='separate'):
         self.rnn_size = rnn_size
@@ -67,7 +68,7 @@ class MANNCell():
             if self.k_strategy == 'separate':
                 a_list.append(a)
 
-        w_u = self.gamma * prev_w_u + tf.add_n(w_r_list) + tf.add_n(w_w_list)   # eq (20)
+        w_u = self.gamma * prev_w_u + tf.add_n(w_r_list) + tf.add_n(w_w_list)   # eq (5)
 
         # Set least used memory location computed from w_(t-1)^u to zero
         M = prev_M * tf.expand_dims(1. - tf.one_hot(prev_indices[:, -1], self.memory_size), dim=2)
@@ -80,7 +81,7 @@ class MANNCell():
                     k = tf.expand_dims(k_list[i], axis=1)
                 elif self.k_strategy == 'separate':
                     k = tf.expand_dims(a_list[i], axis=1)
-                M = M + tf.matmul(w, k)
+                M = M + tf.matmul(w, k)      # eq (8)
 
         # Reading
         read_vector_list = []
@@ -113,11 +114,11 @@ class MANNCell():
             k_norm = tf.sqrt(tf.reduce_sum(tf.square(k), axis=1, keep_dims=True))
             M_norm = tf.sqrt(tf.reduce_sum(tf.square(prev_M), axis=2, keep_dims=True))
             norm_product = M_norm * k_norm
-            K = tf.squeeze(inner_product / (norm_product + 1e-8))                   # eq (17)
+            K = tf.squeeze(inner_product / (norm_product + 1e-8))                   # eq (2)
 
             # Calculating w^c
             K_exp = tf.exp(K)
-            w = K_exp / tf.reduce_sum(K_exp, axis=1, keep_dims=True)                # eq (18)
+            w = K_exp / tf.reduce_sum(K_exp, axis=1, keep_dims=True)                # eq (3)
 
             return w
 
@@ -125,7 +126,7 @@ class MANNCell():
     def write_head_addressing(sig_alpha, prev_w_r, prev_w_lu):
         with tf.variable_scope('write_head_addressing'):
             # Write to (1) the place that was read in t-1 (2) the place that was least used in t-1
-            return sig_alpha * prev_w_r + (1. - sig_alpha) * prev_w_lu              # eq (22)
+            return sig_alpha * prev_w_r + (1. - sig_alpha) * prev_w_lu              # eq (7)
 
     def least_used(self, w_u):
         _, indices = tf.nn.top_k(w_u, k=self.memory_size)

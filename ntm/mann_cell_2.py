@@ -44,12 +44,12 @@ class MANNCell():
         with tf.variable_scope('controller', reuse=self.reuse):
             h_t, c_t = self.controller(controller_input, c_tm1)  # (batches, controller_output_size)
 
-        k_t = tf.tanh(tf.tensordot(h_t, self.W_key, axes=[[1], [1]]) + tf.expand_dims(self.b_key,
-                                                                                      axis=0))  # (batches, heads, vector_dims)
-        a_t = tf.tanh(tf.tensordot(h_t, self.W_add, axes=[[1], [1]]) + tf.expand_dims(self.b_add,
-                                                                                      axis=0))  # (batches, heads, vector_dims)
-        sigma_t = tf.sigmoid(tf.tensordot(h_t, self.W_sigma, axes=[[1], [1]]) + tf.expand_dims(self.b_sigma,
-                                                                                               axis=0))  # (batches, heads, 1)
+        k_t = tf.tanh(tf.tensordot(h_t, self.W_key, axes=[[1], [1]]) + tf.expand_dims(self.b_key, axis=0))
+        # (batches, heads, vector_dims)
+        a_t = tf.tanh(tf.tensordot(h_t, self.W_add, axes=[[1], [1]]) + tf.expand_dims(self.b_add, axis=0))
+        # (batches, heads, vector_dims)
+        sigma_t = tf.sigmoid(tf.tensordot(h_t, self.W_sigma, axes=[[1], [1]]) + tf.expand_dims(self.b_sigma, axis=0))
+        # (batches, heads, 1)
 
         _, wlu_tm1_ = tf.nn.top_k(wu_tm1, k=self.memory_size)
         wlu_tm1 = tf.reduce_sum(tf.one_hot(wlu_tm1_[:, -self.head_num:], depth=self.memory_size),
@@ -59,8 +59,8 @@ class MANNCell():
 
         M_t_ = M_tm1 * (1. - tf.expand_dims(tf.one_hot(wlu_tm1_[:, -1], depth=self.memory_size),
                                             axis=2))  # (batches, memory_size, 1 -> memory_dim)
-        M_t = M_t_ + tf.reduce_sum(tf.matmul(tf.expand_dims(ww_t, 3), tf.expand_dims(a_t, 2)),
-                                   axis=1)  # (batches, head_num, memory_size, vector_dim) -> (batches, memory_size, vector_dim)
+        M_t = M_t_ + tf.reduce_sum(tf.matmul(tf.expand_dims(ww_t, 3), tf.expand_dims(a_t, 2)), axis=1)
+        # (batches, head_num, memory_size, vector_dim) -> (batches, memory_size, vector_dim)
 
         inner_product = tf.matmul(k_t, tf.transpose(M_t, [0, 2, 1]))  # (batches, heads, memory_size)
         norm_product = tf.sqrt(tf.reduce_sum(tf.square(k_t), axis=2, keep_dims=True)) * \
